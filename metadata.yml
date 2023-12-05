@@ -1,0 +1,10 @@
+title: Dino
+description: Chrome Dino for 32Blit
+author: M. Gerloff
+splash:
+  file: assets/image.png
+icon:
+  file: assets/icon.png
+version: v0.5.0
+category: game
+url: https://github.com/lummi01/32Blit-Dino
