@@ -25,6 +25,12 @@ struct CACTUS
 	float x = 136;
 };
 
+struct PTERO
+{
+	short ani = 2;
+	short y = 50;
+};
+
 struct CLOUD
 {
 	short type;
@@ -37,11 +43,19 @@ PLAYER p;
 CACTUS cactus[2];
 CACTUS ground[5];
 CLOUD cloud[2];
+PTERO ptero;
+
 Timer ani_timer;
+Timer pteroani_timer;
 
 void ani_update(Timer &t)
 {
 	p.ani > 0? p.ani = 0: p.ani = 3; 	
+}	
+
+void pteroani_update(Timer &t)
+{
+	ptero.ani == 4? ptero.ani = 2: ptero.ani = 4; 	
 }	
 
 void UpdateControl()
@@ -86,44 +100,24 @@ void NewCactus(short i)
 	short last = i - 1;
 	if (last < 0)
 		last = 1;
-	
-	cactus[i].type = rand() % 9;
+
+	cactus[last].type < 9? cactus[i].type = rand() % 10: cactus[i].type = rand() % 9;
 	cactus[i].x = cactus[last].x + rand() %160 + 100;
+	if (cactus[i].type == 9)
+		ptero.y = 44 + rand() %28; 
 }
 
 void UpdateCactus()
 {
-	short xsize[9]{-7,-13,-19,-16,-23,-16,-5,-8,-6};
+	short xsize[10]{-7,-13,-19,-16,-23,-16,-5,-8,-6,-24};
 	for (short i=0; i<2; i++)
 	{
 		cactus[i].x -= p.dx;
+		if (cactus[i].type == 9)
+			cactus[i].x -= .08f;
 		if (cactus[i].x < xsize[cactus[i].type])
 			NewCactus(i);
 	}
-}
-
-void Collision_old(short xs, short ys)
-{
-	short xsize[9]{5,11,16,14,21,14,6,8,6};
-	short ysize[9]{10,10,10,18,18,6,5,6,2};
-	for (short i=0; i<2; i++)
-	{
-
-		if ((cactus[i].x + 1) < 22 && (cactus[i].x + xsize[cactus[i].type]) > 12)
-		{
-			if (cactus[i].type > 6)
-			{
-				if (game.state == 0)
-					p.dx = .5;
-			}
-			else if (p.y < ysize[cactus[i].type]) // game over
-			{
-				ani_timer.start();
-				p.type = 1;
-				game.state = 3;
-			}
-		}
-	} 
 }
 
 void Collision()
@@ -139,9 +133,9 @@ void Collision()
 		ballyx = 17;
 	}
  
-	int objx[9]{3,7,11,5,11,7,3,3,3};
-	int objy[9]{86,89,93,78,85,96,93,93,93};
-	int objr[9]{2,7,11,4,11,7,3,3,3};
+	int objx[10]{3,7,11,5,11,7,3,3,3,12};
+	int objy[10]{86,89,93,78,85,96,93,93,93,ptero.y + 7};
+	int objr[10]{2,7,11,4,11,7,3,3,3,5};
 
 	for (short i=0; i<2; i++)
 	{
@@ -151,8 +145,8 @@ void Collision()
 		int dy2 = ballyy - objy[cactus[i].type];
 		if (sqrt((dx1 * dx1) + (dy1 * dy1)) < (4 + objr[cactus[i].type]) || sqrt((dx2 * dx2) + (dy2 * dy2)) < (6 + objr[cactus[i].type]))
 		{
-			if (cactus[i].type > 6)
-				p.dx = .5;
+			if (cactus[i].type < 9 && cactus[i].type > 6)
+				p.dx = .8;
 			else
 			{
 				ani_timer.start();
@@ -186,7 +180,7 @@ void UpdateCloud()
 		{
 			cloud[i].type = rand() %3;
 			cloud[i].x = 160 + rand() %32;
-			cloud[i].y = 22 + rand() %30;
+//			cloud[i].y = 22 + rand() %30;
 		}
 	}
 }
@@ -231,6 +225,9 @@ void init()
 	ani_timer.init(ani_update, 3000, 1);
 	ani_timer.start();
 
+	pteroani_timer.init(pteroani_update, 250, -1);
+	pteroani_timer.start();
+
 //    if (read_save(game.best) == false)
 //        game.best = 0;
 
@@ -249,7 +246,7 @@ void init()
 	cloud[0].y = 48;
 	cloud[1].type = 1;
 	cloud[1].x = 110;
-	cloud[1].y = 32;
+	cloud[1].y = 34;
 }
 
 
@@ -291,7 +288,12 @@ void render(uint32_t time)
 	for (short i=0; i<2; i++)
 	{
 		if (cactus[i].x < 160)
-			screen.sprite(Rect(type[cactus[i].type], 6, xsize[cactus[i].type], ysize[cactus[i].type]), Point(cactus[i].x, 96 - (ysize[cactus[i].type] * 8)));
+		{
+			if (cactus[i].type < 9)
+				screen.sprite(Rect(type[cactus[i].type], 6, xsize[cactus[i].type], ysize[cactus[i].type]), Point(cactus[i].x, 96 - (ysize[cactus[i].type] * 8)));
+			else
+				screen.sprite(Rect(13,ptero.ani,3,2), Point(cactus[i].x, ptero.y));
+		}
 	}
 
 	p.type == 3? screen.sprite(Rect(p.type * 3, 1 + p.ani, 4, 2), Point(6, 79 - p.y)) :screen.sprite(Rect(p.type * 3, p.ani, 3, 3), Point(6, 71 - p.y));
